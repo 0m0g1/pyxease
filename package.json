@@ -20,7 +20,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
     "@electron-forge/plugin-fuses": "^7.3.0",
     "@electron/fuses": "^1.7.0",
-    "electron": "29.1.0"
+    "electron": "29.1.1"
   },
   "keywords": [],
   "author": {
