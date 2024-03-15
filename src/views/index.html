@@ -6,14 +6,33 @@
     <link rel="stylesheet" href="../public/style.css" />
   </head>
   <body>
-    <div id="left-bar"></div>
-    <div id="working-area">
-      <div id="canvas-wrapper">
-        <canvas id="main-canvas"></canvas>
-        <canvas id="grid-canvas"></canvas>
+    <section id="main-window">
+      <div id="left-bar">
+        <div id="tools">
+          <ul>
+            <li><button onclick="changeToolTo('pen')">pen</button></li>
+            <li><button onclick="changeToolTo('erasor')">erasor</button></li>
+            <li><button>bucket</button></li>
+            <li><button>select</button></li>
+            <li><button><img src="" alt=""></button></li>
+            <li><button><img src="" alt=""></button></li>
+          </ul>
+        </div>
+        <div id="color-wrapper">
+          <ul>
+            <li><input type="color" id="main-color-swatch"></li>
+          </ul>
+        </div>
       </div>
-    </div>
-    <div id="right-bar"></div>
+      <div id="working-area">
+        <div id="canvas-wrapper">
+          <canvas id="main-canvas"></canvas>
+          <canvas id="grid-canvas"></canvas>
+        </div>
+      </div>
+      <div id="right-bar"></div>
+    </section>
+
     <script defer src="../public/main.js"></script>
   </body>
 </html>

@@ -1,9 +1,22 @@
+:root {
+  --medium-gap: 0.5rem;
+  --small-gap: calc(var(--medium-gap) / 2);
+  --very-small-gap: calc(var(--medium-gap) / 4);
+  --large-gap: calc(var(--medium-gap) * 2);
+  --very-large-gap: calc(var(--medium-gap) * 4);
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+}
+
+ul,
+li {
+  list-style-type: none;
 }
 
 html, 
@@ -15,6 +28,49 @@ body {
   width: 100%;
   height: 100vh;
 }
+
+#main-window {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+#left-bar {
+  width: 15%;
+  height: 100%;
+  background-color: white;
+}
+
+#left-bar div {
+  width: 100%;
+}
+
+#tools ul {
+  width: 100%;
+  display: grid;
+  gap: var(--small-gap);
+  grid-template-columns: 30% 30% 30%;
+}
+
+#tools ul li {
+  width: 100%;
+}
+
+#color-wrapper {
+  aspect-ratio: 1;
+}
+
+#color-wrapper ul {
+  width: 100%;
+}
+
+#color-wrapper ul li {
+  width: 100%;
+}
+
+/* #tools ul li button {
+  aspect-ratio: 1;
+} */
 
 #working-area {
   width: 100%;

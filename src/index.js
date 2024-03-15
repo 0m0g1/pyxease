@@ -48,7 +48,7 @@ function createMainMenu() {
                   label: 'Open',
                   accelerator: 'CmdOrCtrl+O',
                   click() {
-                      // Handle 'Open' action
+                      openImage();
                   }
               },
               {
@@ -70,11 +70,17 @@ function createMainMenu() {
           submenu: [
               {
                   label: 'Undo',
-                  role: 'undo'
+                  accelerator: "CmdorCtrl+z",
+                  click: () => {
+                    mainWindow.webContents.send("undo");
+                  }
               },
               {
                   label: 'Redo',
-                  role: 'redo'
+                  accelerator: "CmdorCtrl+Y",
+                  click: () => {
+                    mainWindow.webContents.send("redo");
+                  }
               },
               { type: 'separator' },
               {
@@ -118,6 +124,31 @@ function createMainMenu() {
 ipcMain.on("save-image", (event, data) => {
   saveCanvasImage(data);
 })
+
+function openImage() {
+    dialog.showOpenDialog({
+        title: "choose an image",
+        filters: [
+            {name: "png image", extensions: ["png"]}
+        ]
+    }).then((result) => {
+        if (!result.canceled) {
+            const filePath = result.filePaths[0];
+            fs.readFile(filePath, (err, data) => {
+                if (err) {
+                    throw(err);
+                }
+                else {
+                    const imageDataUrl = `data:image/png;base64,${data.toString("base64")}`;
+                    mainWindow.webContents.send("open-image", imageDataUrl);
+                }
+            })
+        }
+    }).catch((err) => {
+        dialog.showErrorBox("Error opening file",  `There was an error oppening the file: ${err}`);
+    })
+}
+
 
 function saveCanvasImage(canvasData) {
   // Create a dialog to choose save location
