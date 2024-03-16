@@ -27,6 +27,8 @@ const createWindow = () => {
   mainWindow.loadFile(path.join(pathToViews, 'index.html'));
   Menu.setApplicationMenu(createMainMenu());
 
+  mainWindow.maximize();
+
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 };
@@ -41,7 +43,7 @@ function createMainMenu() {
                   label: 'New',
                   accelerator: 'CmdOrCtrl+N',
                   click() {
-                      // Handle 'New' action
+                      mainWindow.webContents.send("new-image");
                   }
               },
               {
@@ -100,10 +102,19 @@ function createMainMenu() {
       {
           label: 'View',
           submenu: [
-              { role: 'reload' },
-              { role: 'forcereload' },
-              { role: 'toggledevtools' }
-          ]
+            { role: 'reload' },
+            { role: 'forcereload' },
+            { role: 'toggledevtools' },
+            { type: 'separator' },
+            {
+                label: "Grid",
+                type: "checkbox",
+                checked: false,
+                click: (button) => {
+                    mainWindow.webContents.send("toggle-show-grid", button.checked);   
+                }
+            }
+        ]
       },
       {
           label: 'Help',

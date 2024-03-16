@@ -5,6 +5,8 @@ const canvasWrapper = document.querySelector("#canvas-wrapper");
 const mainCanvas = document.querySelector("#main-canvas");
 const gridCanvas = document.querySelector("#grid-canvas");
 const mainColorSwatch = document.querySelector("#main-color-swatch");
+const titleBars = document.querySelectorAll(".title-bar");
+const closePopupButtons = document.querySelectorAll(".close-popup");
 const history = {
     currentImage: null,
     currentStep: 0,
@@ -26,7 +28,6 @@ const mouseEvents = {
 
 
 // variables
-
 let aspectRatio = {
     width: 16,
     height: 9,
@@ -40,6 +41,7 @@ const tools = Object.freeze({
 })
 let currentTool = tools.pen;
 let currentColour = "#000000";
+let showGrid = false;
 
 
 // functions
@@ -58,23 +60,32 @@ function resizeCanvases() {
 }
 
 function redrawImage() {
-    pen.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    const imageOnThisStep = steps[history.currentStep];
+    if (!imageOnThisStep) return;
+    
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageOnThisStep.width;
+    tempCanvas.height = imageOnThisStep.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.putImageData(imageOnThisStep, 0, 0);
 
-    const lastImageFromHistory = steps[history.currentStep];
-    pen.putImageData(lastImageFromHistory, 0, 0);
+    pen.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    pen.save();
+    pen.scale(mainCanvas.width / imageOnThisStep.width, mainCanvas.height / imageOnThisStep.height);
+    pen.drawImage(tempCanvas, 0, 0);
+    pen.restore();
 }
 
 
 function drawGrid() {
     gridPen.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+    if (!showGrid) return;
 
-    const gridCellSize = Math.min(Math.floor(gridCanvas.width / 16), Math.floor(gridCanvas.height / 16));
-
-    for (let x = 0; x < gridCanvas.width + cellSize; x += gridCellSize) {
+    for (let x = 0; x < gridCanvas.width + cellSize; x += cellSize) {
         gridPen.moveTo(x, 0);
         gridPen.lineTo(x, gridCanvas.height);
     }
-    for (let y = 0; y < gridCanvas.height + cellSize; y += gridCellSize) {
+    for (let y = 0; y < gridCanvas.height + cellSize; y += cellSize) {
         gridPen.moveTo(0, y);
         gridPen.lineTo(gridCanvas.width, y);
     }
@@ -103,13 +114,19 @@ function drawPixel(e) {
     pen.fillRect(xIndex, yIndex, cellSize, cellSize);
     
     const modifiedImageData = pen.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+    
+    clearStepsAfterCurrentStep();
+    
     steps.push(modifiedImageData);
-
+    
+    mouseEvents.lastDrawnX = xIndex;
+    mouseEvents.lastDrawnY = yIndex;
+    
     history.currentStep += 1;
 }
 
 function clearPixel(e) {
-
+    
     const boundingRect = mainCanvas.getBoundingClientRect();
     const x = e.clientX - boundingRect.left;
     const y = e.clientY - boundingRect.top ;
@@ -119,17 +136,17 @@ function clearPixel(e) {
     const yPos = indexY * cellSize;
     pen.clearRect(xPos, yPos, cellSize, cellSize);
     
-    const newHistoryPixels = JSON.parse(JSON.stringify(steps[steps.length - 1]));
-    newHistoryPixels[indexY][indexX].colour = null;
-
+    const modifiedImageData = pen.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+    
     clearStepsAfterCurrentStep();
-    steps.push(newHistoryPixels);
-    redrawImage();
-
-    mouseEvents.lastDrawnX = indexX;
-    mouseEvents.lastDrawnY = indexY;
-
+    
+    // mouseEvents.lastDrawnX = indexX;
+    // mouseEvents.lastDrawnY = indexY;
+    
+    steps.push(modifiedImageData);
     history.currentStep += 1;
+
+    redrawImage();
 }
 
 function clearStepsAfterCurrentStep() {
@@ -194,8 +211,19 @@ document.onmouseup = (e) => {
 }
 
 mainCanvas.onmousedown = (e) => {
-    mouseEvents.isDrawing = true;
-    handleCanvasMouseEvent(e);
+    if (e.button == 0) {
+        mouseEvents.isDrawing = true;
+
+        const boundingRect = mainCanvas.getBoundingClientRect();
+        const x = e.clientX - boundingRect.left;
+        const y = e.clientY - boundingRect.top ;
+        const indexX = Math.floor(x / cellSize);
+        const indexY = Math.floor(y / cellSize);
+
+        if (mouseEvents.lastDrawnX !== indexX && mouseEvents.lastDrawnY !== indexY) {
+            handleCanvasMouseEvent(e);
+        }
+    }
 }
 
 mainCanvas.onmousemove = (e) => {
@@ -219,6 +247,47 @@ mainColorSwatch.onchange = (e) => {
     currentColour = e.target.value;
 }
 
+let popupMovement = {
+    startX: null,
+    startY: null,
+    isMovingPopup: false,
+}
+
+titleBars.forEach((bar) => {
+    bar.dataset.deltaX = 0;
+    bar.dataset.deltaY = 0;
+
+    bar.onmousedown = (e) => {
+        popupMovement.startX = e.clientX - parseInt(bar.dataset.deltaX);
+        popupMovement.startY = e.clientY - parseInt(bar.dataset.deltaY);
+        popupMovement.isMovingPopup = true;
+    }
+    bar.onmousemove = (e) => {
+        if (popupMovement.isMovingPopup == false) return;
+        
+        const deltaX = e.clientX - popupMovement.startX;
+        const deltaY =  e.clientY - popupMovement.startY;
+        const popup = document.querySelector(`#${bar.dataset.parent}`);
+        popup.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        bar.dataset.deltaX = deltaX;
+        bar.dataset.deltaY = deltaY;
+    }
+    bar.onmouseup = (e) => {
+        popupMovement.isMovingPopup = false;
+    }
+    bar.onmouseleave = (e) => {
+        popupMovement.isMovingPopup = false;
+    }
+})
+
+closePopupButtons.forEach((button) => {
+    button.onclick = () => {
+        const parentPopup = document.querySelector(`#${button.dataset.parent}`);
+        parentPopup.style.display = "none";
+        parentPopup.style.transform = "";
+    }
+})
+
 // IpcRenderer events
 
 ipcRenderer.on("save-image", (event) => {
@@ -235,8 +304,6 @@ ipcRenderer.on("open-image", (event, imageDataUrl) => {
         aspectRatio.height = imageHeight;
         createCanvasHistory();
         resizeCanvases();
-
-    
         pen.drawImage(img, 0, 0, mainCanvas.width, mainCanvas.height);
     }
     img.src = imageDataUrl;
@@ -255,6 +322,15 @@ ipcRenderer.on("redo", () => {
         history.currentStep += 1;
         redrawImage();
     }
+})
+
+ipcRenderer.on("new-image", () => {
+    
+})
+
+ipcRenderer.on("toggle-show-grid", (event, state) => {
+    showGrid = state;
+    drawGrid();
 })
 
 // Initialization
