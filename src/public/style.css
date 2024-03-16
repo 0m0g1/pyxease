@@ -30,6 +30,7 @@ body {
 }
 
 .icon-button {
+  min-width: 20px;
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -117,6 +118,10 @@ body {
   grid-area: 1/1;
 }
 
+canvas {
+  image-rendering: pixelated;
+}
+
 #grid-canvas {
   pointer-events: none;
 }
@@ -141,10 +146,12 @@ body {
 }
 
 #popups> * {
+  display: none;
+  flex-direction: column;
   position: absolute;
   z-index: 99;
   min-width: 300px;
-  min-height: 200px;
+  min-height: fit-content;
   border: 1px solid;
   pointer-events: all;
 }
@@ -160,4 +167,53 @@ body {
 
 #popups> div> .title-bar h2 {
   pointer-events: none;
+}
+
+.popup-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--small-gap);
+}
+
+.popup-body div .row li,
+.popup-body div .row li button {
+  width: 100%;
+}
+
+.popup-body div ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--small-gap);
+}
+
+.popup-body div ul .labelandinput {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20% 80%;
+}
+
+.popup-body div ul li> div {
+  width: 100%;
+}
+
+.pixel-input-container {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid;
+}
+
+.pixel-input {
+  width: fit-content;
+  background-color: transparent;
+  border: none;
+}
+
+.pixel-input:focus-visible {
+  outline: transparent;
+}
+
+.row {
+    display: flex !important;
+    flex-direction: row !important;
 }

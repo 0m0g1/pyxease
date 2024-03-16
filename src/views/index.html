@@ -38,6 +38,55 @@
           <h3>New Image</h3>
           <button class="icon-button close-popup" data-parent="new-image-popup">&Cross;</button>
         </div>
+        <div class="popup-body">
+          <div>
+            <h4>Size</h4>
+            <ul>
+              <li class="labelandinput">
+                <p>Width</p>
+                <div class="pixel-input-container">
+                  <input value="32" type="text" class="pixel-input" id="new-image-width-input">
+                  <span>px</span>
+                </div>
+              </li>
+              <li class="labelandinput">
+                <p>Height</p>
+                <div class="pixel-input-container">
+                  <input value="32" type="text" class="pixel-input" id="new-image-height-input">
+                  <span>px</span>
+                </div>
+              </li>
+              <li></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Backgound</h4>
+            <ul class="row">
+              <li>
+                <p>Transparent</p>
+                <input class="bg-selector" type="radio" name="bg-color" value="transparent" checked>
+              </li>
+              <li>
+                <p>White</p>
+                <input class="bg-selector" type="radio" name="bg-color" value="white">
+              </li>
+              <li>
+                <p>Black</p>
+                <input class="bg-selector" type="radio" name="bg-color" value="black">
+              </li>
+            </ul>
+          </div>
+          <div>
+            <ul class="row">
+              <li>
+                <button data-parent="new-image-popup" class="close-popup" >Cancel</button>
+              </li>
+              <li>
+                <button data-parent="new-image-popup" id="create-new-image-button">Okay</button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
     <script defer src="../public/main.js"></script>

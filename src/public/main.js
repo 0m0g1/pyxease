@@ -1,5 +1,11 @@
+/**
+ * @author 0m0g1
+ * @github https://0m0g1.github.io
+ */
+
 const {ipcRenderer, app} = require("electron");
 
+const createNewImageButton = document.querySelector("#create-new-image-button");
 const workingArea = document.querySelector("#working-area");
 const canvasWrapper = document.querySelector("#canvas-wrapper");
 const mainCanvas = document.querySelector("#main-canvas");
@@ -7,6 +13,7 @@ const gridCanvas = document.querySelector("#grid-canvas");
 const mainColorSwatch = document.querySelector("#main-color-swatch");
 const titleBars = document.querySelectorAll(".title-bar");
 const closePopupButtons = document.querySelectorAll(".close-popup");
+const pixelInputs = document.querySelectorAll(".pixel-input");
 const history = {
     currentImage: null,
     currentStep: 0,
@@ -15,7 +22,14 @@ const history = {
 const steps = history.steps;
 const canvases = [mainCanvas, gridCanvas];
 pen = mainCanvas.getContext("2d", {willReadFrequently: true});
-const gridPen = gridCanvas.getContext("2d")
+const gridPen = gridCanvas.getContext("2d");
+
+const imageConfigs = {
+    isNewImage: false,
+    bgColor: "white",
+    height: 9,
+    width: 16,
+}
 
 const mouseEvents = {
     startX: null,
@@ -28,10 +42,6 @@ const mouseEvents = {
 
 
 // variables
-let aspectRatio = {
-    width: 16,
-    height: 9,
-}
 
 let magnification = 1;
 let cellSize;
@@ -47,20 +57,27 @@ let showGrid = false;
 // functions
 
 function resizeCanvases() {
-    cellSize = (workingArea.getBoundingClientRect().width * 0.5) / (aspectRatio.width / magnification);
-    const canvasWidth = Math.floor(cellSize * aspectRatio.width);
-    const canvasHeight = Math.floor(cellSize * aspectRatio.height);
+    cellSize = (workingArea.getBoundingClientRect().width * 0.5) / (imageConfigs.width / magnification);
+    const canvasWidth = Math.floor(cellSize * imageConfigs.width);
+    const canvasHeight = Math.floor(cellSize * imageConfigs.height);
     canvasWrapper.style.width = canvasWidth + "px";
     canvasWrapper.style.height = canvasHeight + "px";
     canvases.forEach((canvas) => {
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        canvas.style.width = canvasWrapper.style.width;
+        canvas.style.height = canvasWrapper.style.height;
     })
     redrawImage();
 }
 
 function redrawImage() {
     const imageOnThisStep = steps[history.currentStep];
+    if (imageConfigs.isNewImage) {
+        pen.fillStyle = imageConfigs.bgColor;
+        pen.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+    } else {
+        pen.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    }
+    
     if (!imageOnThisStep) return;
     
     const tempCanvas = document.createElement('canvas');
@@ -69,7 +86,7 @@ function redrawImage() {
     const tempCtx = tempCanvas.getContext('2d');
     tempCtx.putImageData(imageOnThisStep, 0, 0);
 
-    pen.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+
     pen.save();
     pen.scale(mainCanvas.width / imageOnThisStep.width, mainCanvas.height / imageOnThisStep.height);
     pen.drawImage(tempCanvas, 0, 0);
@@ -78,7 +95,7 @@ function redrawImage() {
 
 
 function drawGrid() {
-    gridPen.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+    gridPen.clearRect(0, 0, gridCanvas.style.width, gridCanvas.style.height);
     if (!showGrid) return;
 
     for (let x = 0; x < gridCanvas.width + cellSize; x += cellSize) {
@@ -134,7 +151,13 @@ function clearPixel(e) {
     const indexY = Math.floor(y / cellSize);
     const xPos = indexX * cellSize;
     const yPos = indexY * cellSize;
-    pen.clearRect(xPos, yPos, cellSize, cellSize);
+
+    if (imageConfigs.isNewImage) {
+        pen.fillStyle = imageConfigs.bgColor;
+        pen.fillRect(xPos, yPos, cellSize, cellSize);
+    } else {
+        pen.clearRect(xPos, yPos, cellSize, cellSize);
+    }
     
     const modifiedImageData = pen.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
     
@@ -169,6 +192,36 @@ function handleCanvasMouseEvent(e) {
             clearPixel(e);
         }
     }
+}
+
+function resizeInputToWidthOfTextInside(input) {
+    const tempSpan = document.createElement("span");
+    tempSpan.innerHTML = input.value;
+    tempSpan.style.visibility = "hidden";
+    document.body.appendChild(tempSpan);
+    input.style.width = tempSpan.offsetWidth + "px";
+    document.body.removeChild(tempSpan);
+}
+
+function createNewImage() {
+    const newImageWidthInput = document.querySelector("#new-image-width-input");
+    const newImageHeightInput = document.querySelector("#new-image-height-input");
+    const bgSelectors = document.querySelectorAll(".bg-selector");
+    bgSelectors.forEach((selector) => {
+        if (selector.checked) {
+            imageConfigs.bgColor = selector.value;
+        }
+    })
+    imageConfigs.isNewImage = true;
+
+    imageConfigs.width = parseInt(newImageWidthInput.value);
+    imageConfigs.height = parseInt(newImageHeightInput.value);
+
+    mainCanvas.width = imageConfigs.width;
+    mainCanvas.height = imageConfigs.height;
+
+    createCanvasHistory();
+    resizeCanvases();
 }
 
 // Event listeners
@@ -219,7 +272,7 @@ mainCanvas.onmousedown = (e) => {
         const y = e.clientY - boundingRect.top ;
         const indexX = Math.floor(x / cellSize);
         const indexY = Math.floor(y / cellSize);
-
+        
         if (mouseEvents.lastDrawnX !== indexX && mouseEvents.lastDrawnY !== indexY) {
             handleCanvasMouseEvent(e);
         }
@@ -239,7 +292,11 @@ mainCanvas.onmousemove = (e) => {
     }
 }
 
-mainCanvas.onmouseup = (e) => {
+mainCanvas.onmouseup = () => {
+    mouseEvents.isDrawing = false;
+}
+
+mainCanvas.onmouseleave = () => {
     mouseEvents.isDrawing = false;
 }
 
@@ -288,10 +345,46 @@ closePopupButtons.forEach((button) => {
     }
 })
 
+pixelInputs.forEach((input) => {
+    input.onready = () => {
+        const inputValue = input.value;
+        input.value = inputValue.replace(/[^0-9]/g, "");
+        if (parseInt(input.value) <= 0) {
+            input.value = "1";
+        }
+        if (parseInt(input.value) >= 2048) {
+            input.value = "2048";
+        }
+        resizeInputToWidthOfTextInside(input);
+    }
+    input.oninput = () => {
+        const inputValue = input.value;
+        input.value = inputValue.replace(/[^0-9]/g, "");
+        if (parseInt(input.value) <= 0) {
+            input.value = "1";
+        }
+        if (parseInt(input.value) >= 2048) {
+            input.value = "2048";
+        }
+        resizeInputToWidthOfTextInside(input);
+    }
+})
+
+createNewImageButton.onclick = () => {
+    const popup = document.querySelector(`#${createNewImageButton.dataset.parent}`);
+    popup.style.display = "none";
+    createNewImage();
+}
+
 // IpcRenderer events
 
 ipcRenderer.on("save-image", (event) => {
-    const canvasData = mainCanvas.toDataURL().replace(/^data:image\/png;base64,/, '');
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = imageConfigs.width;
+    tempCanvas.height = imageConfigs.height;
+    const tempPen = tempCanvas.getContext("2d");
+    tempPen.drawImage(mainCanvas, 0, 0, imageConfigs.width, imageConfigs.height);
+    const canvasData = tempCanvas.toDataURL().replace(/^data:image\/png;base64,/, '');
     ipcRenderer.send("save-image", canvasData);
 })
 
@@ -300,11 +393,20 @@ ipcRenderer.on("open-image", (event, imageDataUrl) => {
     img.onload = () => {
         const imageWidth = img.naturalWidth;
         const imageHeight = img.naturalHeight;
-        aspectRatio.width = imageWidth;
-        aspectRatio.height = imageHeight;
+        imageConfigs.isNewImage = false; 
+        imageConfigs.width = imageWidth;
+        imageConfigs.height = imageHeight;
+
+        mainCanvas.width = imageConfigs.width;
+        mainCanvas.height = imageConfigs.height;
+
         createCanvasHistory();
         resizeCanvases();
-        pen.drawImage(img, 0, 0, mainCanvas.width, mainCanvas.height);
+
+        steps.push(pen.getImageData(0, 0, mainCanvas.width, mainCanvas.height));
+        history.currentStep += 1;
+
+        pen.drawImage(img, 0, 0);
     }
     img.src = imageDataUrl;
     history.currentImage = img;
@@ -325,7 +427,7 @@ ipcRenderer.on("redo", () => {
 })
 
 ipcRenderer.on("new-image", () => {
-    
+    document.getElementById("new-image-popup").style.display = "flex";
 })
 
 ipcRenderer.on("toggle-show-grid", (event, state) => {
@@ -343,8 +445,12 @@ function createCanvasHistory() {
 }
 
 window.onload = () => {
+    pen.imageSmoothingEnabled = false;
     canvasWrapper.width = workingArea.getBoundingClientRect().width / 2;
     canvasWrapper.height = workingArea.getBoundingClientRect().height / 2;
+    pixelInputs.forEach((input) => {
+        resizeInputToWidthOfTextInside(input);
+    })
     createCanvasHistory();
     resizeCanvases();
     drawGrid();
